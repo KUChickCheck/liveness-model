@@ -42,7 +42,7 @@ pip install -r requirements.txt
 ```
 
 ### 5️⃣ Install Git LFS
-If you haven't already, install Git LFS (Large File Storage) to manage large files like the model file (.pth).
+If you haven't already, install Git LFS (Large File Storage) to manage large files like the model file (`.pth`).
 - For Window: [Git LFS for Windows](https://git-lfs.github.com/)
 - For Mac:
 ```bash
