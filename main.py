@@ -39,6 +39,27 @@ model.eval()
 # Load feature extractor
 feature_extractor = ViTFeatureExtractor.from_pretrained("google/vit-base-patch16-224")
 
+# Load model and processor for version 2.2.3
+MODEL_NAME_V223 = "nguyenkhoa/dinov2_Liveness_detection_v2.2.3"
+liveness_model_v223 = AutoModelForImageClassification.from_pretrained(MODEL_NAME_V223)
+liveness_processor_v223 = AutoImageProcessor.from_pretrained(MODEL_NAME_V223)
+
+# Load model and processor for version 2.1.4
+MODEL_NAME_V214 = "nguyenkhoa/dinov2_Liveness_detection_v2.1.4"
+liveness_model_v214 = AutoModelForImageClassification.from_pretrained(MODEL_NAME_V214)
+liveness_processor_v214 = AutoImageProcessor.from_pretrained(MODEL_NAME_V214)
+
+def predict_image(model, processor, image_bytes):
+    image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+    inputs = processor(images=image, return_tensors="pt")
+    with torch.no_grad():
+        outputs = model(**inputs)
+    logits = outputs.logits
+    predicted_class_idx = logits.argmax(-1).item()
+    class_labels = model.config.id2label
+    predicted_class = class_labels[predicted_class_idx]
+    return predicted_class
+
 # Preprocessing function
 def preprocess_image(image: Image.Image):
     inputs = feature_extractor(images=image, return_tensors="pt")
@@ -65,6 +86,18 @@ async def predict(file: UploadFile = File(...)):
         "predicted_class": predicted_class,
         "probabilities": probabilities  # List of probabilities for each class
     }
+
+@app.post("/model/predict/dinov2/v2.2.3")
+async def predict_v223(file: UploadFile = File(...)):
+    image_bytes = await file.read()
+    predicted_class = predict_image(liveness_model_v223, liveness_processor_v223, image_bytes)
+    return {"version": "v2.2.3", "filename": file.filename, "predicted_class": predicted_class}
+
+@app.post("/model/predict/dinov2/v2.1.4")
+async def predict_v214(file: UploadFile = File(...)):
+    image_bytes = await file.read()
+    predicted_class = predict_image(liveness_model_v214, liveness_processor_v214, image_bytes)
+    return {"version": "v2.1.4", "filename": file.filename, "predicted_class": predicted_class}
 
 @app.get("/model/predict")
 async def predict():
